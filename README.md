@@ -2,7 +2,7 @@
 
 This package lets you run and kill SSH tunnels.  To use it:
 
-- Set the variable `ssh-tunnels-configurations', e.g.:
+- Set the variable `ssh-tunnels-configurations`, e.g.:
 
 ```emacs-lisp
 (setq ssh-tunnels-configurations
@@ -12,18 +12,18 @@ This package lets you run and kill SSH tunnels.  To use it:
          :login "me@host")))
 ```
 
-- Type M-x ssh-tunnels RET
+- Type `M-x ssh-tunnels RET`
 
 - You should see the list of tunnels; running tunnels will have 'R'
   in their state column
 
-- To run the tunnel at the current line, type r
+- To run the tunnel at the current line, type `r`
 
-- To kill a running tunnel, type k
+- To kill a running tunnel, type `k`
 
 - You may want to temporarily change a tunnel's local port.  To do
   that you may provide a prefix argument to the run command, for
-  example by typing C-u 1234 r
+  example by typing `C-u 1234 r`
 
 # License
 
