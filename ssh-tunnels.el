@@ -53,7 +53,7 @@
 ;;
 ;; - You may want to temporarily change a tunnel's local port.  To do
 ;;   that you may provide a prefix argument to the run command, for
-;;   example by typing C-u 1234 r
+;;   example by typing C-u 1235 r
 
 ;;; Code:
 
