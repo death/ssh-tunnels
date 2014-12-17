@@ -127,7 +127,7 @@ with the following properties:
   (make-hash-table :test 'equal)
   "A table to keep tunnel-related state.  Note that we'll lose
 this state if the user exits Emacs (rms forbid...), or it may
-become irrelevant if `ssh-tunnels-list' changes.")
+become irrelevant if `ssh-tunnels-configurations' changes.")
 
 (defvar ssh-tunnels-mode-map
   (let ((map (make-sparse-keymap)))
