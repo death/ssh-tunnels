@@ -123,6 +123,11 @@ with the following properties:
   :type 'sexp
   :group 'ssh-tunnels)
 
+(defcustom ssh-tunnels-temp-directory "/tmp/"
+  "The directory where SSH control socket files will reside."
+  :type 'string
+  :group 'ssh-tunnels)
+
 (defvar ssh-tunnels--state-table
   (make-hash-table :test 'equal)
   "A table to keep tunnel-related state.  Note that we'll lose
@@ -141,6 +146,7 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
 
 (define-derived-mode ssh-tunnels-mode tabulated-list-mode "SSH tunnels"
   "Major mode for managing SSH tunnels."
+  (setq default-directory ssh-tunnels-temp-directory)
   (add-hook 'tabulated-list-revert-hook 'ssh-tunnels-refresh nil t))
 
 (defun ssh-tunnels ()
