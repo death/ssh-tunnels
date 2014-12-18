@@ -2,7 +2,7 @@
 
 ;; Author: death <github.com/death>
 ;; Version: 1.0
-;; Package-Requires: ()
+;; Package-Requires: ((emacs "24"))
 ;; Keywords: tools, convenience
 ;; URL: http://github.com/death/ssh-tunnels
 
@@ -57,7 +57,7 @@
 
 ;;; Code:
 
-(require 'cl)
+(require 'cl-lib)
 (require 'tabulated-list)
 
 (defgroup ssh-tunnels nil
@@ -293,3 +293,5 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
   (eql 0 (ssh-tunnels--command tunnel :check)))
 
 (provide 'ssh-tunnels)
+
+;;; ssh-tunnels.el ends here
