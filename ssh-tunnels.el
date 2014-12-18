@@ -149,6 +149,7 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
   (setq default-directory ssh-tunnels-temp-directory)
   (add-hook 'tabulated-list-revert-hook 'ssh-tunnels-refresh nil t))
 
+;;;###autoload
 (defun ssh-tunnels ()
   "View and manipulate SSH tunnels."
   (interactive)
