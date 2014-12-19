@@ -2,7 +2,7 @@
 
 ;; Author: death <github.com/death>
 ;; Version: 1.0
-;; Package-Requires: ((cl-lib "1.0") (tabulated-list "1.0"))
+;; Package-Requires: ((cl-lib "0.5") (emacs "24"))
 ;; Keywords: tools, convenience
 ;; URL: http://github.com/death/ssh-tunnels
 
