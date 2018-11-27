@@ -63,6 +63,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'netrc)
 (require 'tabulated-list)
 
 (defgroup ssh-tunnels nil
@@ -321,6 +322,34 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
 
 (defun ssh-tunnels--check (tunnel)
   (eql 0 (ssh-tunnels--command tunnel :check)))
+
+;;; auto-ssh-tunnnels mode
+
+(defun open-network-stream@run-ssh-tunnel (name buffer host service &rest parameters)
+  "Start SSH tunnel, if needed, before connecting to HOST.
+
+When connecting to localhost, check whether `ssh-tunnels-configurations' has
+a tunnel with local port matching the service port, and if so, make sure that
+the tunnel is running."
+  (when (string= host "localhost")
+    (let* ((port (if (stringp service)
+                     (string-to-number service)
+                   service))
+           (tunnel (cl-find port ssh-tunnels-configurations
+                            :test #'netrc-port-equal
+                            :key (lambda (tunnel)
+                                   (ssh-tunnels--property tunnel :local-port)))))
+      (when (and tunnel (not (ssh-tunnels--check tunnel)))
+        (message "Starting tunnel '%s'..." (ssh-tunnels--property tunnel :name))
+        (ssh-tunnels--run tunnel)))))
+
+(define-minor-mode auto-ssh-tunnels-mode "Automatically start SSH tunnels"
+  :global t
+  :group 'ssh-tunnels
+  (if auto-ssh-tunnels-mode
+      (advice-add 'open-network-stream :before
+                  #'open-network-stream@run-ssh-tunnel)
+    (advice-remove 'open-network-stream #'open-network-stream@run-ssh-tunnel)))
 
 (provide 'ssh-tunnels)
 
