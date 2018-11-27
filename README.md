@@ -24,15 +24,14 @@ This package lets you run and kill SSH tunnels.  To use it:
 - You may want to temporarily change a tunnel's local port.  To do
   that you may provide a prefix argument to the run command, for
   example by typing `C-u 1235 r`
-  
+
 ## Auto-ssh-tunnels-mode
 
 This package also includes a global minor-mode that automatically
 starts SSH tunnels when Emacs's built-in `open-network-stream`
-function is used.  This mode checks whether a new connection is to
-localhost and to a port for which `ssh-tunnels-configurations` has a
-tunnel with a matching local port, and if so, makes sure that the
-tunnel is running.
+function is used.  Before a connection is made to a host and port that
+correspond to a tunnel's host and local port, this mode will make sure
+that the tunnel is running.
 
 Use `M-x auto-ssh-tunnels-mode` to enable this global minor-mode.
 
