@@ -339,9 +339,10 @@ the tunnel is running."
                             :test #'netrc-port-equal
                             :key (lambda (tunnel)
                                    (ssh-tunnels--property tunnel :local-port)))))
-      (when (and tunnel (not (ssh-tunnels--check tunnel)))
-        (message "Starting tunnel '%s'..." (ssh-tunnels--property tunnel :name))
-        (ssh-tunnels--run tunnel)))))
+      (let ((default-directory ssh-tunnels-temp-directory))
+        (when (and tunnel (not (ssh-tunnels--check tunnel)))
+          (message "Starting tunnel '%s'..." (ssh-tunnels--property tunnel :name))
+          (ssh-tunnels--run tunnel))))))
 
 (define-minor-mode auto-ssh-tunnels-mode "Automatically start SSH tunnels"
   :global t
