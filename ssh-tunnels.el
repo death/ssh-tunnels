@@ -323,26 +323,35 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
 (defun ssh-tunnels--check (tunnel)
   (eql 0 (ssh-tunnels--command tunnel :check)))
 
-;;; auto-ssh-tunnnels mode
+;;; auto-ssh-tunnels mode
+
+(defun ssh-tunnels--lookup (host service)
+  "Return an SSH tunnel that matches the supplied HOST and
+SERVICE, or NIL if there is no match."
+  ;; According to OPEN-NETWORK-STREAM documentation, SERVICE may be a
+  ;; service name, or an integer, or an integer string.  If it is an
+  ;; integer string, we convert it to an integer here.
+  (when (and (stringp service) (cl-every #'cl-digit-char-p service))
+    (setq service (string-to-number service)))
+  (cl-find-if (lambda (tunnel)
+                (and (string= host (ssh-tunnels--property tunnel :host))
+                     (let ((tunnel-lport (ssh-tunnels--property tunnel :local-port)))
+                       (if (stringp service)
+                           (netrc-port-equal service tunnel-lport)
+                         (= service tunnel-lport)))))
+              ssh-tunnels-configurations))
 
 (defun open-network-stream@run-ssh-tunnel (name buffer host service &rest parameters)
   "Start SSH tunnel, if needed, before connecting to HOST.
 
-When connecting to localhost, check whether `ssh-tunnels-configurations' has
-a tunnel with local port matching the service port, and if so, make sure that
-the tunnel is running."
-  (when (string= host "localhost")
-    (let* ((port (if (stringp service)
-                     (string-to-number service)
-                   service))
-           (tunnel (cl-find port ssh-tunnels-configurations
-                            :test #'netrc-port-equal
-                            :key (lambda (tunnel)
-                                   (ssh-tunnels--property tunnel :local-port)))))
-      (let ((default-directory ssh-tunnels-temp-directory))
-        (when (and tunnel (not (ssh-tunnels--check tunnel)))
-          (message "Starting tunnel '%s'..." (ssh-tunnels--property tunnel :name))
-          (ssh-tunnels--run tunnel))))))
+Check whether `ssh-tunnels-configurations' has a tunnel matching
+the host and service and, if so, make sure that the tunnel is
+running."
+  (let ((default-directory ssh-tunnels-temp-directory)
+        (tunnel (ssh-tunnels--lookup host service)))
+    (when (and tunnel (not (ssh-tunnels--check tunnel)))
+      (message "Starting tunnel '%s'..." (ssh-tunnels--property tunnel :name))
+      (ssh-tunnels--run tunnel))))
 
 (define-minor-mode auto-ssh-tunnels-mode "Automatically start SSH tunnels"
   :global t
