@@ -301,7 +301,8 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
                       (list "-O" "exit"))
                      ((eq command :check)
                       (list "-O" "check"))
-                     (t (error "Unknown ssh-tunnels command '%s'" command)))))
+                     (t (error "Unknown ssh-tunnels command '%s'" command))))
+         (default-directory ssh-tunnels-temp-directory))
     (apply 'call-process ssh-tunnels-program nil nil nil
            "-S" (shell-quote-argument name)
            (append args
@@ -348,8 +349,7 @@ SERVICE, or NIL if there is no match."
 Check whether `ssh-tunnels-configurations' has a tunnel matching
 the host and service and, if so, make sure that the tunnel is
 running."
-  (let ((default-directory ssh-tunnels-temp-directory)
-        (tunnel (ssh-tunnels--lookup host service)))
+  (let ((tunnel (ssh-tunnels--lookup host service)))
     (when (and tunnel (not (ssh-tunnels--check tunnel)))
       (message "Starting tunnel '%s'..." (ssh-tunnels--property tunnel :name))
       (ssh-tunnels--run tunnel))))
