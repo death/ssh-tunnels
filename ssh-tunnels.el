@@ -159,7 +159,6 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
 
 (define-derived-mode ssh-tunnels-mode tabulated-list-mode "SSH tunnels"
   "Major mode for managing SSH tunnels."
-  (setq default-directory ssh-tunnels-temp-directory)
   (add-hook 'tabulated-list-revert-hook 'ssh-tunnels-refresh nil t))
 
 ;;;###autoload
