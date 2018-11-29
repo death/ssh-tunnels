@@ -331,7 +331,9 @@ SERVICE, or NIL if there is no match."
   ;; According to OPEN-NETWORK-STREAM documentation, SERVICE may be a
   ;; service name, or an integer, or an integer string.  If it is an
   ;; integer string, we convert it to an integer here.
-  (when (and (stringp service) (cl-every #'cl-digit-char-p service))
+  (when (and (stringp service)
+             (cl-some #'cl-digit-char-p service)
+             (cl-every #'cl-digit-char-p service))
     (setq service (string-to-number service)))
   (cl-find-if (lambda (tunnel)
                 (and (not (string= "SH" (ssh-tunnels--property tunnel :type)))
