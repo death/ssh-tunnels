@@ -323,6 +323,33 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
 (defun ssh-tunnels--check (tunnel)
   (eql 0 (ssh-tunnels--command tunnel :check)))
 
+(defun ssh-tunnels--toggle-state (tunnel)
+  (if (ssh-tunnels--check tunnel)
+      (ssh-tunnels--kill tunnel)
+    (ssh-tunnels--run tunnel)))
+
+;;; completing-read frontend
+
+(defun ssh-tunnels--read-tunnel ()
+  (let* ((candidates (cl-loop
+                      for tunnel in ssh-tunnels-configurations
+                      collect (ssh-tunnels--property tunnel :name)))
+         (candidate (completing-read "Tunnel: " candidates nil t)))
+    (cl-find candidate ssh-tunnels-configurations
+             :test #'string=
+             :key (lambda (tunnel)
+                    (ssh-tunnels--property tunnel :name)))))
+
+(defun ssh-tunnels-run-tunnel ()
+  "Start a configured SSH tunnel."
+  (interactive)
+  (ssh-tunnels--run (ssh-tunnels--read-tunnel)))
+
+(defun ssh-tunnels-kill-tunnel ()
+  "Kill a running SSH tunnel."
+  (interactive)
+  (ssh-tunnels--kill (ssh-tunnels--read-tunnel)))
+
 ;;; auto-ssh-tunnels mode
 
 (defun ssh-tunnels--lookup (host service)

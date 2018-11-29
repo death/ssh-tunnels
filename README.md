@@ -25,6 +25,12 @@ This package lets you run and kill SSH tunnels.  To use it:
   that you may provide a prefix argument to the run command, for
   example by typing `C-u 1235 r`
 
+## Helm, Ido, Ivy
+
+The package comes with a Helm frontend (`M-x helm-ssh-tunnels`) as
+well as `completing-read` frontends, which can be used with Ido or Ivy
+(`M-x ssh-tunnels-run-tunnel` and `M-x ssh-tunnels-kill-tunnel`).
+
 ## Auto-ssh-tunnels-mode
 
 This package also includes a global minor-mode that automatically
