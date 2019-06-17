@@ -290,7 +290,11 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
                      (format "%s:%s" host local-port))
                     ; Default Local/Remote port forwarding
                     (t (format "%s:%s:%s"
-                                local-port host remote-port)))))
+                               local-port
+                               (if (string-match-p (regexp-quote ":") host)
+                                   (format "[%s]" host)
+                                 host)
+                               remote-port)))))
          (args (cond ((eq command :run)
                       (append (list "-M" "-f" "-N" "-T")
                               (cond ((string= tunnel-type "SH") nil)
