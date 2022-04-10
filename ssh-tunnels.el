@@ -129,10 +129,10 @@ with the following properties:
   :host - The tunneling host; defaults to \"localhost\".
 
   :local-port - The tunnel's local port; defaults
-                to the value of `:remote-port'.
+                to the value of `:local-port'.
 
   :remote-port - The tunnel's remote port; defaults
-                 to the value of `:local-port'."
+                 to the value of `:remote-port'."
   :type 'sexp
   :group 'ssh-tunnels)
 
@@ -289,19 +289,9 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
               (cond ((string= tunnel-type "-D")
                      (format "%s:%s" host local-port))
                     ((string= tunnel-type "-R")
-                     (format "%s:%s:%s"
-                             remote-port
-                             (if (string-match-p (regexp-quote ":") host)
-                                 (format "[%s]" host)
-                               host)
-                             local-port))
-                    ; Default Local port forwarding
-                    (t (format "%s:%s:%s"
-                               local-port
-                               (if (string-match-p (regexp-quote ":") host)
-                                   (format "[%s]" host)
-                                 host)
-                               remote-port)))))
+                     (ssh-tunnels--port-forward-definition remote-port host local-port))
+                    ;; Default Local port forwarding
+                    (t (ssh-tunnels--port-forward-definition local-port host remote-port)))))
          (args (cond ((eq command :run)
                       (append (list "-M" "-f" "-N" "-T")
                               (cond ((string= tunnel-type "SH") nil)
@@ -338,6 +328,14 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
   (if (ssh-tunnels--check tunnel)
       (ssh-tunnels--kill tunnel)
     (ssh-tunnels--run tunnel)))
+
+(defun ssh-tunnels--port-forward-definition (port host hostport)
+  (format "%s:%s:%s"
+          port
+          (if (string-match-p (regexp-quote ":") host)
+              (format "[%s]" host)
+            host)
+          hostport))
 
 ;;; completing-read frontend
 
