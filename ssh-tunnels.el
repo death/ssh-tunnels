@@ -129,10 +129,10 @@ with the following properties:
   :host - The tunneling host; defaults to \"localhost\".
 
   :local-port - The tunnel's local port; defaults
-                to the value of `:local-port'.
+                to the value of `:remote-port'.
 
   :remote-port - The tunnel's remote port; defaults
-                 to the value of `:remote-port'."
+                 to the value of `:local-port'."
   :type 'sexp
   :group 'ssh-tunnels)
 
