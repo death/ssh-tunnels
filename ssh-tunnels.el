@@ -288,13 +288,10 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
           (if (eq command :run)
               (cond ((string= tunnel-type "-D")
                      (format "%s:%s" host local-port))
-                    ; Default Local/Remote port forwarding
-                    (t (format "%s:%s:%s"
-                               local-port
-                               (if (string-match-p (regexp-quote ":") host)
-                                   (format "[%s]" host)
-                                 host)
-                               remote-port)))))
+                    ((string= tunnel-type "-R")
+                     (ssh-tunnels--port-forward-definition remote-port host local-port))
+                    ;; Default Local port forwarding
+                    (t (ssh-tunnels--port-forward-definition local-port host remote-port)))))
          (args (cond ((eq command :run)
                       (append (list "-M" "-f" "-N" "-T")
                               (cond ((string= tunnel-type "SH") nil)
@@ -331,6 +328,14 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
   (if (ssh-tunnels--check tunnel)
       (ssh-tunnels--kill tunnel)
     (ssh-tunnels--run tunnel)))
+
+(defun ssh-tunnels--port-forward-definition (port host hostport)
+  (format "%s:%s:%s"
+          port
+          (if (string-match-p (regexp-quote ":") host)
+              (format "[%s]" host)
+            host)
+          hostport))
 
 ;;; completing-read frontend
 
