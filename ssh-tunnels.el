@@ -45,6 +45,12 @@
 ;;            :type "-R"
 ;;            :local-port 1234
 ;;            :remote-port 3306
+;;            :login "me@host")
+;;           (:name "my local socket tunnel"
+;;            :type "-L"
+;;            :is-socket? t
+;;            :local-port "/tmp/socket"
+;;            :remote-port "/tmp/socket"
 ;;            :login "me@host")))
 ;;
 ;; - Type M-x ssh-tunnels RET
@@ -132,7 +138,9 @@ with the following properties:
                 to the value of `:remote-port'.
 
   :remote-port - The tunnel's remote port; defaults
-                 to the value of `:local-port'."
+                 to the value of `:local-port'.
+
+  :is-socket - Specifies if the tunnel is a UNIX socket."
   :type 'sexp
   :group 'ssh-tunnels)
 
@@ -197,14 +205,15 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
              (local-port (ssh-tunnels--property tunnel :local-port))
              (host (ssh-tunnels--property tunnel :host))
              (remote-port (ssh-tunnels--property tunnel :remote-port))
-             (login (ssh-tunnels--property tunnel :login)))
+             (login (ssh-tunnels--property tunnel :login))
+	     (is-socket? (ssh-tunnels--property tunnel :is-socket?)))
         (push (list tunnel
                     (vector (if (ssh-tunnels--check tunnel) "R" " ")
                             (ssh-tunnels--pretty-name name)
                             tunnel-type
-                            (number-to-string local-port)
+                            (if is-socket? local-port (number-to-string local-port))
                             host
-                            (number-to-string remote-port)
+			    (if is-socket? remote-port (number-to-string remote-port))
                             login))
               entries)))
     (setq tabulated-list-entries (nreverse entries)))
@@ -241,7 +250,7 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
       (ssh-tunnels--run tunnel)
       (let ((name (ssh-tunnels--property tunnel :name))
             (local-port (ssh-tunnels--property tunnel :local-port)))
-        (message "Tunnel '%s' on port %d" name local-port))))
+        (message "Tunnel '%s' on port %s" name local-port))))
   (forward-line)
   (ssh-tunnels-refresh))
 
@@ -274,6 +283,9 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
          (or (cl-getf tunnel :remote-port)
              (cl-getf tunnel :local-port)
              (if (string= (cl-getf tunnel :type) "SH") 0)))
+	((eq key :is-socket?)
+         (or (cl-getf tunnel :is-socket?)
+             nil))
         (t
          (cl-getf tunnel key))))
 
@@ -284,14 +296,15 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
          (remote-port (ssh-tunnels--property tunnel :remote-port))
          (host (ssh-tunnels--property tunnel :host))
          (login (ssh-tunnels--property tunnel :login))
+	 (is-socket? (ssh-tunnels--property tunnel :is-socket?))
          (tunnel-definition
           (if (eq command :run)
               (cond ((string= tunnel-type "-D")
                      (format "%s:%s" host local-port))
                     ((string= tunnel-type "-R")
-                     (ssh-tunnels--port-forward-definition remote-port host local-port))
+                     (ssh-tunnels--port-forward-definition remote-port host local-port is-socket?))
                     ;; Default Local port forwarding
-                    (t (ssh-tunnels--port-forward-definition local-port host remote-port)))))
+                    (t (ssh-tunnels--port-forward-definition local-port host remote-port is-socket?)))))
          (args (cond ((eq command :run)
                       (append (list "-M" "-f" "-N" "-T")
                               (cond ((string= tunnel-type "SH") nil)
@@ -329,13 +342,17 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
       (ssh-tunnels--kill tunnel)
     (ssh-tunnels--run tunnel)))
 
-(defun ssh-tunnels--port-forward-definition (port host hostport)
-  (format "%s:%s:%s"
-          port
-          (if (string-match-p (regexp-quote ":") host)
-              (format "[%s]" host)
+(defun ssh-tunnels--port-forward-definition (port host hostport is-socket?)
+  (if is-socket?
+      (format "%s:%s"
+              port
+              hostport)
+    (format "%s:%s:%s"
+            port
+            (if (string-match-p (regexp-quote ":") host)
+		(format "[%s]" host)
             host)
-          hostport))
+            hostport)))
 
 ;;; completing-read frontend
 
