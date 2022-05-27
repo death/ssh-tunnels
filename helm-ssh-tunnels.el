@@ -60,7 +60,7 @@
           (if (ssh-tunnels--check tunnel) "R" " ")
           (ssh-tunnels--pretty-name (ssh-tunnels--property tunnel :name))
           (ssh-tunnels--property tunnel :login)
-          (format "%d:%s:%d"
+          (format "%s:%s:%s"
                   (ssh-tunnels--property tunnel :local-port)
                   (ssh-tunnels--property tunnel :host)
                   (ssh-tunnels--property tunnel :remote-port))))
