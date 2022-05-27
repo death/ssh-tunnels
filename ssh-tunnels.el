@@ -48,9 +48,8 @@
 ;;            :login "me@host")
 ;;           (:name "my local socket tunnel"
 ;;            :type "-L"
-;;            :is-socket? t
-;;            :local-port "/tmp/socket"
-;;            :remote-port "/tmp/socket"
+;;            :local-socket "/tmp/socket"
+;;            :remote-socket "/tmp/socket"
 ;;            :login "me@host")))
 ;;
 ;; - Type M-x ssh-tunnels RET
@@ -124,11 +123,12 @@ with the following properties:
   :name - The name of the tunnel.
 
   :type - Tunnel type; defaults to \"-L\" (Local).
-          May also be \"-R\" or \"-D\" for Remote and Dynamic port forwards.
+          May also be \"-R\" or \"-D\" for Remote and Dynamic tunnels.
           If set to \"SH\", no port forwarding will be attempted and your ssh
           client is responsible for tunnelling (e.g. with ~/.ssh/config), in
           this case `:login' must match your ~/.ssh/config entry and `:host',
-          `:local-port' and `:remote-port' are ignored.
+          `:local-port', `:remote-port', `:local-socket', `:remote-socket'
+          are ignored.
 
   :login - The SSH login to use.
 
@@ -140,7 +140,15 @@ with the following properties:
   :remote-port - The tunnel's remote port; defaults
                  to the value of `:local-port'.
 
-  :is-socket - Specifies if the tunnel is a UNIX socket."
+For tunneling sockets, use the properties below. The type of
+forwarding will be decided by checking if `:local-port' can be found
+or not.
+
+  :local-socket - The tunnel's local socket; defaults
+                to the value of `:remote-socket'.
+
+  :remote-socket - The tunnel's remote socket; defaults
+                 to the value of `:local-socket'."
   :type 'sexp
   :group 'ssh-tunnels)
 
@@ -203,17 +211,22 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
       (let* ((name (ssh-tunnels--property tunnel :name))
              (tunnel-type (ssh-tunnels--property tunnel :type))
              (local-port (ssh-tunnels--property tunnel :local-port))
+	     (remote-port (ssh-tunnels--property tunnel :remote-port))
+	     (local-socket (ssh-tunnels--property tunnel :local-socket))
+	     (remote-socket (ssh-tunnels--property tunnel :remote-socket))
              (host (ssh-tunnels--property tunnel :host))
-             (remote-port (ssh-tunnels--property tunnel :remote-port))
-             (login (ssh-tunnels--property tunnel :login))
-	     (is-socket? (ssh-tunnels--property tunnel :is-socket?)))
+             (login (ssh-tunnels--property tunnel :login)))
         (push (list tunnel
                     (vector (if (ssh-tunnels--check tunnel) "R" " ")
                             (ssh-tunnels--pretty-name name)
                             tunnel-type
-                            (if is-socket? local-port (number-to-string local-port))
+                            (if (ssh-tunnels--forwards-port-p tunnel)
+				(number-to-string local-port)
+			      local-socket)
                             host
-			    (if is-socket? remote-port (number-to-string remote-port))
+			    (if (ssh-tunnels--forwards-port-p tunnel)
+				(number-to-string remote-port)
+			      remote-socket)
                             login))
               entries)))
     (setq tabulated-list-entries (nreverse entries)))
@@ -243,14 +256,16 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
 (defun ssh-tunnels-run (&optional arg)
   (interactive "P")
   (let ((tunnel (ssh-tunnels--tunnel t)))
-    (when (numberp arg)
+    (when (and (numberp arg) (ssh-tunnels--forwards-port-p tunnel))
       (setf tunnel (cl-list* :local-port arg tunnel)))
     (when (not (ssh-tunnels--check tunnel))
       (message "Tunneling...")
       (ssh-tunnels--run tunnel)
       (let ((name (ssh-tunnels--property tunnel :name))
-            (local-port (ssh-tunnels--property tunnel :local-port)))
-        (message "Tunnel '%s' on port %s" name local-port))))
+            (local-port (ssh-tunnels--property tunnel :local-port))
+	    (local-socket (ssh-tunnels--property tunnel :local-socket)))
+        (message "Tunnel '%s' on port %s" name
+		 (if (ssh-tunnels--forwards-port-p tunnel) local-port local-socket)))))
   (forward-line)
   (ssh-tunnels-refresh))
 
@@ -283,9 +298,14 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
          (or (cl-getf tunnel :remote-port)
              (cl-getf tunnel :local-port)
              (if (string= (cl-getf tunnel :type) "SH") 0)))
-	((eq key :is-socket?)
-         (or (cl-getf tunnel :is-socket?)
-             nil))
+        ((eq key :local-socket)
+         (or (cl-getf tunnel :local-socket)
+             (cl-getf tunnel :remote-socket)
+             (if (string= (cl-getf tunnel :type) "SH") 0)))
+        ((eq key :remote-socket)
+         (or (cl-getf tunnel :remote-socket)
+             (cl-getf tunnel :local-socket)
+             (if (string= (cl-getf tunnel :type) "SH") 0)))
         (t
          (cl-getf tunnel key))))
 
@@ -294,17 +314,26 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
          (tunnel-type (ssh-tunnels--property tunnel :type))
          (local-port (ssh-tunnels--property tunnel :local-port))
          (remote-port (ssh-tunnels--property tunnel :remote-port))
+	 (local-socket (ssh-tunnels--property tunnel :local-socket))
+	 (remote-socket (ssh-tunnels--property tunnel :remote-socket))
          (host (ssh-tunnels--property tunnel :host))
          (login (ssh-tunnels--property tunnel :login))
-	 (is-socket? (ssh-tunnels--property tunnel :is-socket?))
          (tunnel-definition
           (if (eq command :run)
               (cond ((string= tunnel-type "-D")
                      (format "%s:%s" host local-port))
                     ((string= tunnel-type "-R")
-                     (ssh-tunnels--port-forward-definition remote-port host local-port is-socket?))
+		     (if (ssh-tunnels--forwards-port-p tunnel)
+			 (ssh-tunnels--port-forward-definition
+			  remote-port host local-port)
+		       (ssh-tunnels--socket-forward-definition
+			remote-socket local-socket)))
                     ;; Default Local port forwarding
-                    (t (ssh-tunnels--port-forward-definition local-port host remote-port is-socket?)))))
+                    (t (if (ssh-tunnels--forwards-port-p tunnel)
+			   (ssh-tunnels--port-forward-definition
+			    local-port host remote-port)
+			 (ssh-tunnels--socket-forward-definition
+			  local-socket remote-socket))))))
          (args (cond ((eq command :run)
                       (append (list "-M" "-f" "-N" "-T")
                               (cond ((string= tunnel-type "SH") nil)
@@ -342,17 +371,20 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
       (ssh-tunnels--kill tunnel)
     (ssh-tunnels--run tunnel)))
 
-(defun ssh-tunnels--port-forward-definition (port host hostport is-socket?)
-  (if is-socket?
-      (format "%s:%s"
-              port
-              hostport)
-    (format "%s:%s:%s"
-            port
-            (if (string-match-p (regexp-quote ":") host)
-		(format "[%s]" host)
+(defun ssh-tunnels--forwards-port-p (tunnel)
+  (if (ssh-tunnels--property tunnel :local-port)
+    t nil))
+
+(defun ssh-tunnels--port-forward-definition (port host hostport)
+  (format "%s:%s:%s"
+          port
+          (if (string-match-p (regexp-quote ":") host)
+	      (format "[%s]" host)
             host)
-            hostport)))
+          hostport))
+
+(defun ssh-tunnels--socket-forward-definition (socket hostsocket)
+  (format "%s:%s" socket hostsocket))
 
 ;;; completing-read frontend
 

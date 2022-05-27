@@ -61,9 +61,13 @@
           (ssh-tunnels--pretty-name (ssh-tunnels--property tunnel :name))
           (ssh-tunnels--property tunnel :login)
           (format "%s:%s:%s"
-                  (ssh-tunnels--property tunnel :local-port)
+                  (if (ssh-tunnels--forwards-port-p tunnel)
+		      (ssh-tunnels--property tunnel :local-port)
+		    (ssh-tunnels--property tunnel :local-socket))
                   (ssh-tunnels--property tunnel :host)
-                  (ssh-tunnels--property tunnel :remote-port))))
+		  (if (ssh-tunnels--forwards-port-p tunnel)
+		      (ssh-tunnels--property tunnel :remote-port)
+		    (ssh-tunnels--property tunnel :remote-socket)))))
 
 (defun helm-ssh-tunnels--get-candidates ()
   (cl-loop for tunnel in ssh-tunnels-configurations
