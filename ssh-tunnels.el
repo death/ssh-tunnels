@@ -264,7 +264,7 @@ or socket associated with the tunnel.")
     (when (numberp arg)
       ;; Use an ad-hoc local port instead of the local port or socket
       ;; specified in configuration.
-      (setf tunnel (copy-list tunnel))
+      (setf tunnel (cl-copy-list tunnel))
       (cl-remf tunnel :local-port)
       (cl-remf tunnel :local-socket)
       (setf tunnel (cl-list* :local-port arg tunnel)))
