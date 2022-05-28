@@ -56,22 +56,13 @@
 (require 'ssh-tunnels)
 
 (defun helm-ssh-tunnels--format-tunnel (tunnel)
-  (when (and (ssh-tunnels--property tunnel :local-port)
-	     (ssh-tunnels--property tunnel :local-socket))
-    (error "Tunnel '%s' has both a `:local-port' and a `:local-socket'"
-	   (ssh-tunnels--property tunnel :name)))
-  (format "%s %-20s %-30s %-34s"
+  (ssh-tunnels--validate tunnel)
+  (format "%s %-20s %-30s %-4s %-34s"
           (if (ssh-tunnels--check tunnel) "R" " ")
           (ssh-tunnels--pretty-name (ssh-tunnels--property tunnel :name))
           (ssh-tunnels--property tunnel :login)
-          (format "%s:%s:%s"
-                  (if (ssh-tunnels--forwards-port-p tunnel)
-		      (ssh-tunnels--property tunnel :local-port)
-		    (ssh-tunnels--property tunnel :local-socket))
-                  (ssh-tunnels--property tunnel :host)
-		  (if (ssh-tunnels--forwards-port-p tunnel)
-		      (ssh-tunnels--property tunnel :remote-port)
-		    (ssh-tunnels--property tunnel :remote-socket)))))
+          (ssh-tunnels--property tunnel :type)
+          (ssh-tunnels--forward-definition tunnel)))
 
 (defun helm-ssh-tunnels--get-candidates ()
   (cl-loop for tunnel in ssh-tunnels-configurations
