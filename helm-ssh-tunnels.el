@@ -56,6 +56,10 @@
 (require 'ssh-tunnels)
 
 (defun helm-ssh-tunnels--format-tunnel (tunnel)
+  (when (and (ssh-tunnels--property tunnel :local-port)
+	     (ssh-tunnels--property tunnel :local-socket))
+    (error "Tunnel '%s' has both a `:local-port' and a `:local-socket'"
+	   (ssh-tunnels--property tunnel :name)))
   (format "%s %-20s %-30s %-34s"
           (if (ssh-tunnels--check tunnel) "R" " ")
           (ssh-tunnels--pretty-name (ssh-tunnels--property tunnel :name))

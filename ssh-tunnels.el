@@ -140,9 +140,8 @@ with the following properties:
   :remote-port - The tunnel's remote port; defaults
                  to the value of `:local-port'.
 
-For tunneling sockets, use the properties below. The type of
-forwarding will be decided by checking if `:local-port' can be found
-or not.
+For tunneling sockets, use the properties below, instead of `:local-port' 
+and/or `:local-tunnel'.
 
   :local-socket - The tunnel's local socket; defaults
                 to the value of `:remote-socket'.
@@ -216,6 +215,9 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
 	     (remote-socket (ssh-tunnels--property tunnel :remote-socket))
              (host (ssh-tunnels--property tunnel :host))
              (login (ssh-tunnels--property tunnel :login)))
+	(when (and local-port local-socket)
+	  (error "Tunnel '%s' has both a `:local-port' and a `:local-socket'"
+		 (ssh-tunnels--property tunnel :name)))
         (push (list tunnel
                     (vector (if (ssh-tunnels--check tunnel) "R" " ")
                             (ssh-tunnels--pretty-name name)
@@ -258,6 +260,10 @@ become irrelevant if `ssh-tunnels-configurations' changes.")
   (let ((tunnel (ssh-tunnels--tunnel t)))
     (when (and (numberp arg) (ssh-tunnels--forwards-port-p tunnel))
       (setf tunnel (cl-list* :local-port arg tunnel)))
+    (when (and (ssh-tunnels--property tunnel :local-port)
+	       (ssh-tunnels--property tunnel :local-socket))
+      (error "Tunnel '%s' has both a `:local-port' and a `:local-socket'"
+	     (ssh-tunnels--property tunnel :name)))
     (when (not (ssh-tunnels--check tunnel))
       (message "Tunneling...")
       (ssh-tunnels--run tunnel)
