@@ -394,24 +394,32 @@ or socket associated with the tunnel.")
 	      (format "[%s]" host)
             host)))
     (cond ((string= tunnel-type "-D")
-           (unless (numberp local-port)
-             (error "No local port specified for tunnel '%s'" name))
-           (format "%s:%s" host local-port))
-          ((string= tunnel-type "-R")
-           (if (and remote-socket local-socket)
-               (format "%s:%s" remote-socket local-socket)
-             (format "%s:%s:%s"
-                     (or remote-port remote-socket)
-                     host
-                     (or local-port local-socket))))
-          (t
-           ;; Default Local port forwarding
-           (if (and local-socket remote-socket)
-               (format "%s:%s" local-socket remote-socket)
-             (format "%s:%s:%s"
-                     (or local-port local-socket)
-                     host
-                     (or remote-port remote-socket)))))))
+	   (unless (numberp local-port)
+	     (error "No local port specified for tunnel '%s'" name))
+	   (format "%s:%s" host local-port))
+	  ((string= tunnel-type "-R")
+	   (cond
+	    ((and remote-port local-port)
+	     (format "%s:%s:%s" remote-port host local-port))
+	    ((and remote-port local-socket)
+	     (format "%s:%s:%s" host remote-port local-socket))
+	    ((and remote-socket local-socket)
+	     (format "%s:%s" remote-socket local-socket))
+	    ((and remote-socket local-port)
+	     (format "%s:%s:%s" remote-socket host local-port))
+	    (t (error "Tunnel '%s' should not have passed the check" name))))
+	  (t
+	   ;; Default Local port forwarding
+	   (cond
+	    ((and local-port remote-socket)
+	     (format "%s:%s:%s" host local-port remote-socket))
+	    ((and local-socket remote-port)
+	     (format "%s:%s:%s" local-socket host remote-port))
+	    ((and local-port remote-port)
+	     (format "%s:%s:%s" local-port host remote-port))
+	    ((and local-socket remote-socket)
+	     (format "%s:%s" local-socket remote-socket))
+	    (t (error "Tunnel '%s' should not have passed the check" name)))))))
 
 ;;; completing-read frontend
 
