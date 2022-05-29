@@ -309,9 +309,9 @@ or socket associated with the tunnel.")
                  (and (null (cl-getf tunnel :local-socket))
                       (cl-getf tunnel :remote-port))))))
         ((eq key :remote-port)
-         (or (cl-getf tunnel :remote-port)
-             (and (null (cl-getf tunnel :remote-socket))
-                  (cl-getf tunnel :local-port))))
+         (and (null (cl-getf tunnel :remote-socket))
+	      (or (cl-getf tunnel :remote-port)
+		  (cl-getf tunnel :local-port))))
         ((eq key :local-socket)
          (let ((state (gethash (cl-getf tunnel :name) ssh-tunnels--state-table)))
            (if (stringp state)
@@ -320,9 +320,9 @@ or socket associated with the tunnel.")
                  (and (null (cl-getf tunnel :local-port))
                       (cl-getf tunnel :remote-socket))))))
         ((eq key :remote-socket)
-         (or (cl-getf tunnel :remote-socket)
-             (and (null (cl-getf tunnel :local-port))
-                  (cl-getf tunnel :local-socket))))
+	 (and (null (cl-getf tunnel :remote-port))
+	      (or (cl-getf tunnel :remote-socket)
+		  (cl-getf tunnel :local-socket))))
         (t
          (cl-getf tunnel key))))
 
@@ -399,27 +399,27 @@ or socket associated with the tunnel.")
 	   (format "%s:%s" host local-port))
 	  ((string= tunnel-type "-R")
 	   (cond
-	    ((and remote-port local-port)
-	     (format "%s:%s:%s" remote-port host local-port))
 	    ((and remote-port local-socket)
 	     (format "%s:%s:%s" host remote-port local-socket))
 	    ((and remote-socket local-socket)
 	     (format "%s:%s" remote-socket local-socket))
-	    ((and remote-socket local-port)
-	     (format "%s:%s:%s" remote-socket host local-port))
-	    (t (error "Tunnel '%s' should not have passed the check" name))))
+	    (t (format "%s:%s:%s"
+		       (or remote-port remote-socket)
+		       host
+		       (or local-port local-socket)))))
 	  (t
 	   ;; Default Local port forwarding
 	   (cond
 	    ((and local-port remote-socket)
 	     (format "%s:%s:%s" host local-port remote-socket))
-	    ((and local-socket remote-port)
-	     (format "%s:%s:%s" local-socket host remote-port))
-	    ((and local-port remote-port)
-	     (format "%s:%s:%s" local-port host remote-port))
 	    ((and local-socket remote-socket)
 	     (format "%s:%s" local-socket remote-socket))
-	    (t (error "Tunnel '%s' should not have passed the check" name)))))))
+	    ((and local-socket remote-port)
+	     (format "%s:%s:%s" local-socket host remote-port))
+	    (t (format "%s:%s:%s"
+		       (or local-port local-socket)
+		       host
+		       (or remote-port remote-socket))))))))
 
 ;;; completing-read frontend
 
