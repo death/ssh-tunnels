@@ -56,14 +56,13 @@
 (require 'ssh-tunnels)
 
 (defun helm-ssh-tunnels--format-tunnel (tunnel)
-  (format "%s %-20s %-30s %-34s"
+  (ssh-tunnels--validate tunnel)
+  (format "%s %-20s %-30s %-4s %-34s"
           (if (ssh-tunnels--check tunnel) "R" " ")
           (ssh-tunnels--pretty-name (ssh-tunnels--property tunnel :name))
           (ssh-tunnels--property tunnel :login)
-          (format "%d:%s:%d"
-                  (ssh-tunnels--property tunnel :local-port)
-                  (ssh-tunnels--property tunnel :host)
-                  (ssh-tunnels--property tunnel :remote-port))))
+          (ssh-tunnels--property tunnel :type)
+          (ssh-tunnels--forward-definition tunnel)))
 
 (defun helm-ssh-tunnels--get-candidates ()
   (cl-loop for tunnel in ssh-tunnels-configurations
