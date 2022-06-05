@@ -140,6 +140,9 @@ with the following properties:
   :remote-port - The tunnel's remote port; defaults
                  to the value of `:local-port'.
 
+  :ssh-port - The tunnel's server port; defaults
+                 to the value of \"22\".
+
 For tunneling sockets, use the properties below, instead of `:local-port'
 and/or `:remote-port'.
 
@@ -323,6 +326,8 @@ or socket associated with the tunnel.")
 	 (and (null (cl-getf tunnel :remote-port))
 	      (or (cl-getf tunnel :remote-socket)
 		  (cl-getf tunnel :local-socket))))
+        ((eq key :ssh-port)
+         (or (cl-getf tunnel :ssh-port) 22))
         (t
          (cl-getf tunnel key))))
 
@@ -342,13 +347,15 @@ or socket associated with the tunnel.")
   (let* ((name (ssh-tunnels--property tunnel :name))
          (tunnel-type (ssh-tunnels--property tunnel :type))
          (login (ssh-tunnels--property tunnel :login))
+         (ssh-port (format "%s" (ssh-tunnels--property tunnel :ssh-port)))
          (args
           (cond ((eq command :run)
                  (append (list "-M" "-f" "-N" "-T")
                          (if (string= tunnel-type "SH")
                              '()
                            (list tunnel-type
-                                 (ssh-tunnels--forward-definition tunnel)))))
+                                 (ssh-tunnels--forward-definition tunnel)))
+                         (list "-p" ssh-port)))
                 ((eq command :kill)
                  (list "-O" "exit"))
                 ((eq command :check)
