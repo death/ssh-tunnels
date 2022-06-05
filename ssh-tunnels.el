@@ -320,9 +320,9 @@ or socket associated with the tunnel.")
                  (and (null (cl-getf tunnel :local-port))
                       (cl-getf tunnel :remote-socket))))))
         ((eq key :remote-socket)
-	 (and (null (cl-getf tunnel :remote-port))
-	      (or (cl-getf tunnel :remote-socket)
-		  (cl-getf tunnel :local-socket))))
+	     (and (null (cl-getf tunnel :remote-port))
+	          (or (cl-getf tunnel :remote-socket)
+		          (cl-getf tunnel :local-socket))))
         (t
          (cl-getf tunnel key))))
 
