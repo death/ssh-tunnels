@@ -355,18 +355,31 @@ or socket associated with the tunnel.")
                  (list "-O" "check"))
                 (t (error "Unknown ssh-tunnels command '%s'" command))))
          (default-directory ssh-tunnels-temp-directory))
-    (apply 'call-process ssh-tunnels-program nil nil nil
-           "-S" (shell-quote-argument name)
-           (append args (list login)))))
+    (with-temp-buffer
+      (let ((exit-status
+             (apply 'call-process ssh-tunnels-program nil t nil
+                    "-S" (shell-quote-argument name)
+                    (append args (list login)))))
+        (when (and (eq command :run)
+                   (not (eql 0 exit-status)))
+          (if (numberp exit-status)
+              (error "Tunnel '%s' could not be created: '%s' (exit status %d)"
+                     name
+                     (buffer-substring-no-properties (point-min) (point-max))
+                     exit-status)
+            (error "Tunnel '%s' could not be created: process exited with signal '%s'"
+                   name
+                   exit-status)))
+        exit-status))))
 
 (defun ssh-tunnels--run (tunnel)
   (remhash (ssh-tunnels--property tunnel :name)
            ssh-tunnels--state-table)
+  (ssh-tunnels--command tunnel :run)
   (puthash (ssh-tunnels--property tunnel :name)
            (or (ssh-tunnels--property tunnel :local-port)
                (ssh-tunnels--property tunnel :local-socket))
-           ssh-tunnels--state-table)
-  (ssh-tunnels--command tunnel :run))
+           ssh-tunnels--state-table))
 
 (defun ssh-tunnels--kill (tunnel)
   (ssh-tunnels--command tunnel :kill)
