@@ -476,19 +476,19 @@ or socket associated with the tunnel.")
      ssh-tunnels-configurations))))
 
 (defun ssh-tunnels-run-group ()
-  "Start configured SSH tunnels by givin group.
+  "Start configured SSH tunnels by given group.
 
 A group list is prompt from `ssh-tunnels-configurations' variable
-`:group' propierty given optionally to each tunnel configuration."
+`:group' property given optionally to each tunnel configuration."
   (interactive)
   (dolist (tunnel (ssh-tunnels--read-group))
     (ssh-tunnels--run tunnel)))
 
 (defun ssh-tunnels-kill-group ()
-  "Kill configured SSH tunnels by givin group.
+  "Kill configured SSH tunnels by given group.
 
 A group list is prompt from `ssh-tunnels-configurations' variable
-`:group' propierty given optionally to each tunnel configuration."
+`:group' property given optionally to each tunnel configuration."
   (interactive)
   (dolist (tunnel (ssh-tunnels--read-group))
     (ssh-tunnels--kill tunnel)))
