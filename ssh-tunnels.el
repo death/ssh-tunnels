@@ -461,16 +461,17 @@ or socket associated with the tunnel.")
   (ssh-tunnels--kill (ssh-tunnels--read-tunnel)))
 
 (defun ssh-tunnels--read-group ()
-  (let ((candidates (seq-remove
+  (let ((candidates (cl-remove-if
                       (lambda (group)
-                        (not group))    ; Removes nil value from connections without group.
-                      (seq-uniq (cl-loop
+                        (null group))    ; Removes nil value from connections without group.
+                      (cl-remove-duplicates (cl-loop
                                  for tunnel in ssh-tunnels-configurations
-                                 collect (ssh-tunnels--property tunnel :group))))))
+                                 collect (ssh-tunnels--property tunnel :group))
+                                            :test #'string=))))
     (if (not candidates)
         (error "No tunnels with group declared on `ssh-tunnels-configurations' variable"))
     (let ((group (completing-read "Group: " candidates nil t)))
-      (seq-filter
+      (cl-remove-if-not
      (lambda (tunnel)
        (string= (ssh-tunnels--property tunnel :group) group))
      ssh-tunnels-configurations))))
