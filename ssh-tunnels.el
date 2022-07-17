@@ -456,6 +456,13 @@ or socket associated with the tunnel.")
   (interactive)
   (ssh-tunnels--kill (ssh-tunnels--read-tunnel)))
 
+(defun ssh-tunnels-kill-all ()
+  "Kill all SSH configured tunnels."
+  (interactive)
+  (dolist
+      (tunnel ssh-tunnels-configurations)
+    (ssh-tunnels--kill tunnel)))
+
 ;;; auto-ssh-tunnels mode
 
 (defun ssh-tunnels--lookup (host service)
