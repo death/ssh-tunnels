@@ -149,8 +149,9 @@ and/or `:remote-port'.
   :remote-socket - The tunnel's remote socket; defaults
                    to the value of `:local-socket'.
 
-  :group - Tunnel's optional group. Set the same group to each
-           tunnel that are convenient to start together.
+  :group - The tunnel's group (a string); defaults to none (`nil').
+           Tunnels belonging to the same group may be started or killed
+           together (e.g., by `ssh-tunnels-run-group').
 "
   :type 'sexp
   :group 'ssh-tunnels)
@@ -440,58 +441,66 @@ or socket associated with the tunnel.")
 
 ;;; completing-read frontend
 
-(defun ssh-tunnels--read-tunnel ()
-  (let* ((candidates (cl-loop
-                      for tunnel in ssh-tunnels-configurations
-                      collect (ssh-tunnels--property tunnel :name)))
-         (candidate (completing-read "Tunnel: " candidates nil t)))
-    (cl-find candidate ssh-tunnels-configurations
-             :test #'string=
-             :key (lambda (tunnel)
-                    (ssh-tunnels--property tunnel :name)))))
+(defun ssh-tunnels--list-tunnel-names ()
+  "Return a list of SSH tunnel names."
+  (cl-loop for tunnel in ssh-tunnels-configurations
+           collect (ssh-tunnels--property tunnel :name)))
 
-(defun ssh-tunnels-run-tunnel ()
+(defun ssh-tunnels--read-tunnel-name ()
+  "Read an SSH tunnel name from the minibuffer."
+  (completing-read "Tunnel: " (ssh-tunnels--list-tunnel-names) nil t))
+
+(defun ssh-tunnels--get-tunnel-by-name (tunnel-name)
+  "Return an SSH tunnel with the supplied name, or NIL if none is
+found."
+  (cl-find tunnel-name ssh-tunnels-configurations
+           :test #'string=
+           :key (lambda (tunnel)
+                  (ssh-tunnels--property tunnel :name))))
+
+(defun ssh-tunnels-run-tunnel (tunnel-name)
   "Start a configured SSH tunnel."
-  (interactive)
-  (ssh-tunnels--run (ssh-tunnels--read-tunnel)))
+  (interactive (list (ssh-tunnels--read-tunnel-name)))
+  (let ((tunnel (ssh-tunnels--get-tunnel-by-name tunnel-name)))
+    (when tunnel
+      (ssh-tunnels--run tunnel))))
 
-(defun ssh-tunnels-kill-tunnel ()
+(defun ssh-tunnels-kill-tunnel (tunnel-name)
   "Kill a running SSH tunnel."
-  (interactive)
-  (ssh-tunnels--kill (ssh-tunnels--read-tunnel)))
+  (interactive (list (ssh-tunnels--read-tunnel-name)))
+  (let ((tunnel (ssh-tunnels--get-tunnel-by-name tunnel-name)))
+    (when tunnel
+      (ssh-tunnels--kill tunnel))))
+
+(defun ssh-tunnels--list-groups ()
+  "Return a list of SSH tunnel groups."
+  (remove nil
+          (cl-remove-duplicates
+           (mapcar (lambda (tunnel)
+                     (ssh-tunnels--property tunnel :group))
+                   ssh-tunnels-configurations)
+           :test #'string=)))
 
 (defun ssh-tunnels--read-group ()
-  (let ((candidates (cl-remove-if
-                      (lambda (group)
-                        (null group))    ; Removes nil value from connections without group.
-                      (cl-remove-duplicates (cl-loop
-                                 for tunnel in ssh-tunnels-configurations
-                                 collect (ssh-tunnels--property tunnel :group))
-                                            :test #'string=))))
-    (if (not candidates)
-        (error "No tunnels with group declared on `ssh-tunnels-configurations' variable"))
-    (let ((group (completing-read "Group: " candidates nil t)))
-      (cl-remove-if-not
-     (lambda (tunnel)
-       (string= (ssh-tunnels--property tunnel :group) group))
-     ssh-tunnels-configurations))))
+  "Read an SSH tunnel group from the minibuffer."
+  (completing-read "Group: " (ssh-tunnels--list-groups) nil t))
 
-(defun ssh-tunnels-run-group ()
-  "Start configured SSH tunnels by given group.
+(defun ssh-tunnels--get-tunnels-by-group (group)
+  "Return a list of SSH tunnels matching `group'."
+  (cl-loop for tunnel in ssh-tunnels-configurations
+           when (string= (ssh-tunnels--property tunnel :group) group)
+           collect tunnel))
 
-A group list is prompt from `ssh-tunnels-configurations' variable
-`:group' property given optionally to each tunnel configuration."
-  (interactive)
-  (dolist (tunnel (ssh-tunnels--read-group))
+(defun ssh-tunnels-run-group (group)
+  "Start configured SSH tunnels by given group."
+  (interactive (list (ssh-tunnels--read-group)))
+  (dolist (tunnel (ssh-tunnels--get-tunnels-by-group group))
     (ssh-tunnels--run tunnel)))
 
-(defun ssh-tunnels-kill-group ()
-  "Kill configured SSH tunnels by given group.
-
-A group list is prompt from `ssh-tunnels-configurations' variable
-`:group' property given optionally to each tunnel configuration."
-  (interactive)
-  (dolist (tunnel (ssh-tunnels--read-group))
+(defun ssh-tunnels-kill-group (group)
+  "Kill configured SSH tunnels by given group."
+  (interactive (list (ssh-tunnels--read-group)))
+  (dolist (tunnel (ssh-tunnels--get-tunnels-by-group group))
     (ssh-tunnels--kill tunnel)))
 
 ;;; auto-ssh-tunnels mode
