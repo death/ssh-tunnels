@@ -147,7 +147,11 @@ and/or `:remote-port'.
                   to the value of `:remote-socket'.
 
   :remote-socket - The tunnel's remote socket; defaults
-                   to the value of `:local-socket'."
+                   to the value of `:local-socket'.
+
+  :group - Tunnel's optional group. Set the same group to each
+           tunnel that are convenient to start together.
+"
   :type 'sexp
   :group 'ssh-tunnels)
 
@@ -455,6 +459,40 @@ or socket associated with the tunnel.")
   "Kill a running SSH tunnel."
   (interactive)
   (ssh-tunnels--kill (ssh-tunnels--read-tunnel)))
+
+(defun ssh-tunnels--read-group ()
+  (let ((candidates (cl-remove-if
+                      (lambda (group)
+                        (null group))    ; Removes nil value from connections without group.
+                      (cl-remove-duplicates (cl-loop
+                                 for tunnel in ssh-tunnels-configurations
+                                 collect (ssh-tunnels--property tunnel :group))
+                                            :test #'string=))))
+    (if (not candidates)
+        (error "No tunnels with group declared on `ssh-tunnels-configurations' variable"))
+    (let ((group (completing-read "Group: " candidates nil t)))
+      (cl-remove-if-not
+     (lambda (tunnel)
+       (string= (ssh-tunnels--property tunnel :group) group))
+     ssh-tunnels-configurations))))
+
+(defun ssh-tunnels-run-group ()
+  "Start configured SSH tunnels by given group.
+
+A group list is prompt from `ssh-tunnels-configurations' variable
+`:group' property given optionally to each tunnel configuration."
+  (interactive)
+  (dolist (tunnel (ssh-tunnels--read-group))
+    (ssh-tunnels--run tunnel)))
+
+(defun ssh-tunnels-kill-group ()
+  "Kill configured SSH tunnels by given group.
+
+A group list is prompt from `ssh-tunnels-configurations' variable
+`:group' property given optionally to each tunnel configuration."
+  (interactive)
+  (dolist (tunnel (ssh-tunnels--read-group))
+    (ssh-tunnels--kill tunnel)))
 
 ;;; auto-ssh-tunnels mode
 
