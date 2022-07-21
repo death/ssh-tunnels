@@ -503,6 +503,13 @@ found."
   (dolist (tunnel (ssh-tunnels--get-tunnels-by-group group))
     (ssh-tunnels--kill tunnel)))
 
+(defun ssh-tunnels-kill-all ()
+  "Kill all SSH configured tunnels."
+  (interactive)
+  (dolist
+      (tunnel ssh-tunnels-configurations)
+    (ssh-tunnels--kill tunnel)))
+
 ;;; auto-ssh-tunnels mode
 
 (defun ssh-tunnels--lookup (host service)
