@@ -506,8 +506,7 @@ found."
 (defun ssh-tunnels-kill-all ()
   "Kill all SSH configured tunnels."
   (interactive)
-  (dolist
-      (tunnel ssh-tunnels-configurations)
+  (dolist (tunnel ssh-tunnels-configurations)
     (ssh-tunnels--kill tunnel)))
 
 ;;; auto-ssh-tunnels mode
